@@ -1,0 +1,280 @@
+<!doctype html>
+
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Topologi & Jaringan — Penjelasan + Alat CIDR/VLSM</title>
+  <style>
+    :root{
+      --bg:#0f1724; --card:#0b1220; --muted:#9aa4b2; --accent:#7dd3fc; --accent-2:#60a5fa; --glass: rgba(255,255,255,0.04);
+      --radius:14px; --glass-2: rgba(255,255,255,0.03);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#071029 0%,#081224 60%);color:#e6eef8}
+    .container{max-width:1100px;margin:32px auto;padding:24px}
+    header{display:flex;align-items:center;gap:16px;margin-bottom:18px}
+    .logo{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;font-weight:700;color:#002132}
+    h1{margin:0;font-size:22px}
+    p.lead{margin:4px 0 0;color:var(--muted)}.grid{display:grid;grid-template-columns:1fr 360px;gap:20px;margin-top:18px}
+.card{background:linear-gradient(180deg,var(--card),#071227);padding:18px;border-radius:var(--radius);box-shadow:0 6px 18px rgba(2,6,23,0.6);}
+.section-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.k{color:var(--accent);font-weight:600}
+.muted{color:var(--muted);font-size:13px}
+
+/* Topology list */
+ul.topo{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+ul.topo li{background:var(--glass);padding:10px;border-radius:10px}
+
+/* tools */
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+input,select,textarea{width:100%;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:inherit}
+.row{display:flex;gap:10px}
+.btn{display:inline-block;padding:10px 12px;border-radius:10px;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#002132;font-weight:700;border:none;cursor:pointer}
+.btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--accent)}
+
+pre{background:var(--glass-2);padding:12px;border-radius:10px;overflow:auto}
+
+/* advice box */
+.hint{background:linear-gradient(90deg,rgba(125,211,252,0.06),rgba(96,165,250,0.04));padding:12px;border-radius:10px;color:var(--muted);font-size:13px}
+
+footer{margin-top:18px;text-align:center;color:var(--muted);font-size:13px}
+
+/* responsive */
+@media(max-width:900px){.grid{grid-template-columns:1fr;}.logo{display:none}}
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">NW</div>
+      <div>
+        <h1>Topologi, Arsitektur, Subnetting, CIDR & VLSM</h1>
+        <p class="lead">Ringkasan konsep dan alat interaktif untuk menghitung CIDR & melakukan VLSM — dibuat cepat untuk belajar dan praktek.</p>
+      </div>
+    </header><div class="grid">
+  <main>
+    <section class="card">
+      <div class="section-title"><h2 class="k">Topologi & Arsitektur</h2><span class="muted">Dasar & contoh</span></div>
+      <div style="display:grid;gap:12px">
+        <div class="hint">Topologi = bagaimana perangkat saling terhubung. Arsitektur = model layanan & kontrol (Client-Server, Peer-to-Peer, dsb.). Pilih arsitektur sesuai skala, keamanan, dan manajemen.</div>
+
+        <h3 style="margin:0 0 6px">Jenis Topologi</h3>
+        <ul class="topo">
+          <li><strong>Bus</strong> — kabel tunggal, sederhana tapi cepat penuh untuk banyak node.</li>
+          <li><strong>Star (Bintang)</strong> — semua perangkat ke hub/switch; mudah kelola dan skalabel.</li>
+          <li><strong>Ring (Cincin)</strong> — node tersusun melingkar; cocok untuk token passing.</li>
+          <li><strong>Mesh (Jala)</strong> — redundansi tinggi; setiap node ke beberapa node lain.</li>
+          <li><strong>Tree (Pohon)</strong> — hirarkis, gabungan star & bus.</li>
+          <li><strong>Hybrid</strong> — kombinasi topologi di atas.</li>
+        </ul>
+
+        <h3 style="margin-top:12px">Arsitektur Jaringan</h3>
+        <ul class="topo">
+          <li><strong>Client-Server</strong> — server pusat sediakan layanan. Baik untuk organisasi besar.</li>
+          <li><strong>Peer-to-Peer (P2P)</strong> — semua node setara; cocok untuk jaringan kecil atau berbagi sederhana.</li>
+        </ul>
+
+        <h3 style="margin-top:12px">Tips memilih</h3>
+        <ol style="margin:0 0 8px 18px;color:var(--muted)">
+          <li>Skala jaringan: kecil & sederhana → P2P; banyak pengguna & layanan → Client-Server.</li>
+          <li>Keamanan & manajemen: Client-Server lebih mudah dikontrol.</li>
+          <li>Redundansi: gunakan mesh/dual-homed link untuk layanan kritis.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:16px">
+      <div class="section-title"><h2 class="k">Subnetting, CIDR & VLSM</h2><span class="muted">Konsep singkat + alat</span></div>
+
+      <h3 style="margin:0 0 6px">Subnetting</h3>
+      <p class="muted">Membagi jaringan besar menjadi beberapa jaringan kecil (subnet) agar ip lebih efisien dan broadcast terkontrol.</p>
+
+      <h3 style="margin-top:10px">CIDR</h3>
+      <p class="muted">Classless Inter-Domain Routing — notasi /prefix (contoh: <code>192.168.1.0/24</code>) menunjukkan jumlah bit jaringan. Lebih fleksibel dibanding kelas A/B/C.</p>
+
+      <h3 style="margin-top:10px">VLSM (Variable Length Subnet Mask)</h3>
+      <p class="muted">Memungkinkan subnet dengan ukuran berbeda sesuai kebutuhan host setiap subnet. Efisien untuk alokasi alamat.</p>
+
+      <div style="margin-top:10px">
+        <small class="muted">Gunakan panel sebelah kanan untuk mencoba kalkulator CIDR dan perencana VLSM.</small>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:16px">
+      <div class="section-title"><h2 class="k">Contoh singkat</h2><span class="muted">Ringkasan tabel cepat</span></div>
+      <pre>
+
+192.168.1.0/24  → Mask: 255.255.255.0  → Host usable: 254 192.168.1.0/25  → Mask: 255.255.255.128→ Host usable: 126 192.168.1.0/26  → Mask: 255.255.255.192→ Host usable: 62 192.168.1.0/27  → Mask: 255.255.255.224→ Host usable: 30 192.168.1.0/28  → Mask: 255.255.255.240→ Host usable: 14 </pre> </section>
+
+</main>
+
+  <aside>
+    <div class="card">
+      <div class="section-title"><h3 class="k">Alat Interaktif</h3><span class="muted">CIDR & VLSM</span></div>
+
+      <!-- CIDR calculator -->
+      <div style="margin-bottom:12px">
+        <label for="cidrInput">Input IP/CIDR (contoh: 192.168.1.10/24)</label>
+        <input id="cidrInput" value="192.168.1.10/24" />
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn" id="calcBtn">Hitung CIDR</button>
+          <button class="btn ghost" id="clearBtn">Bersihkan</button>
+        </div>
+        <div id="cidrResult" style="margin-top:10px"></div>
+      </div>
+
+      <hr style="border:none;height:1px;background:rgba(255,255,255,0.03);margin:12px 0">
+
+      <!-- VLSM planner -->
+      <div>
+        <label for="vlsmNet">Jaringan dasar untuk VLSM (contoh: 192.168.1.0/24)</label>
+        <input id="vlsmNet" value="192.168.1.0/24" />
+        <label for="hostsList" style="margin-top:8px">Daftar kebutuhan host tiap subnet (pisah koma). Contoh: 50,20,10</label>
+        <input id="hostsList" value="50,20,10" />
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn" id="vlsmBtn">Hitung VLSM</button>
+          <button class="btn ghost" id="vlsmClear">Reset</button>
+        </div>
+        <div id="vlsmResult" style="margin-top:10px;max-height:360px;overflow:auto"></div>
+      </div>
+
+      <hr style="border:none;height:1px;background:rgba(255,255,255,0.03);margin:12px 0">
+
+      <div class="muted" style="font-size:13px">Sumber: ringkasan konsep jaringan — cocok untuk belajar. Gunakan alat ini untuk praktek pembagian subnet dan memahami CIDR/VLSM.</div>
+    </div>
+  </aside>
+</div>
+
+<footer> dibuat dengan ❤️ — alat sederhana untuk belajar jaringan</footer>
+
+  </div><script>
+// Utilities: IP int conversion, masks, network, broadcast, host range
+function ipToInt(ip){
+  return ip.split('.').map(Number).reduce((acc,o)=> (acc<<8) + o,0) >>> 0;
+}
+function intToIp(num){
+  return [(num>>>24)&255, (num>>>16)&255, (num>>>8)&255, num&255].join('.')
+}
+function prefixToMask(prefix){
+  const mask = prefix===0?0: (0xffffffff << (32-prefix)) >>>0;
+  return intToIp(mask);
+}
+function maskToPrefix(mask){
+  const p = ipToInt(mask);
+  // count bits
+  return 32 - Math.floor(Math.log2((~p >>>0) + 1));
+}
+function hostsForPrefix(prefix){
+  const hostBits = 32 - prefix;
+  if(hostBits<=0) return 0;
+  return Math.max( (2**hostBits) - 2, 0 );
+}
+
+function networkInfo(ipStr, prefix){
+  const ipInt = ipToInt(ipStr);
+  const maskInt = prefix===0?0:(0xffffffff << (32-prefix))>>>0;
+  const netInt = ipInt & maskInt;
+  const bcastInt = netInt | (~maskInt >>>0);
+  const first = (hostsForPrefix(prefix)===0) ? null : netInt + 1;
+  const last = (hostsForPrefix(prefix)===0) ? null : bcastInt -1;
+  return {
+    network:intToIp(netInt),
+    netInt,
+    broadcast:intToIp(bcastInt),
+    first: first===null?'-':intToIp(first),
+    last: last===null?'-':intToIp(last),
+    mask: intToIp(maskInt),
+    prefix,
+    usableHosts: hostsForPrefix(prefix)
+  };
+}
+
+// CIDR calculator UI
+const cidrInput = document.getElementById('cidrInput');
+const calcBtn = document.getElementById('calcBtn');
+const cidrResult = document.getElementById('cidrResult');
+const clearBtn = document.getElementById('clearBtn');
+
+calcBtn.addEventListener('click', ()=>{
+  const val = cidrInput.value.trim();
+  try{
+    const [ip,pref] = val.split('/');
+    if(!ip || !pref) throw new Error('Format harus IP/Prefix');
+    const prefix = Number(pref);
+    if(prefix<0 || prefix>32) throw new Error('Prefix invalid');
+    const info = networkInfo(ip, prefix);
+    cidrResult.innerHTML = `
+      <div class="hint">Network: <strong>${info.network}/${info.prefix}</strong></div>
+      <pre>
+Mask: ${info.mask}
+Network address: ${info.network}
+Broadcast address: ${info.broadcast}
+Usable hosts: ${info.usableHosts}
+Host range: ${info.first}  -  ${info.last}
+      </pre>`;
+
+}catch(e){ cidrResult.innerHTML = <div class="hint" style="color:#ffb4b4">Error: ${e.message}</div>; } }); clearBtn.addEventListener('click', ()=>{cidrInput.value=''; cidrResult.innerHTML='';});
+
+// VLSM planner const vlsmNet = document.getElementById('vlsmNet'); const hostsList = document.getElementById('hostsList'); const vlsmBtn = document.getElementById('vlsmBtn'); const vlsmResult = document.getElementById('vlsmResult'); const vlsmClear = document.getElementById('vlsmClear');
+
+function smallestPrefixForHosts(nHosts){ if(nHosts<=0) return 32; // need hostBits such that (2^hostBits - 2) >= nHosts for(let hb=0; hb<=30; hb++){ if((2**hb)-2 >= nHosts) return 32-hb; } return 0; }
+
+vlsmBtn.addEventListener('click', ()=>{ const base = vlsmNet.value.trim(); const hostsRaw = hostsList.value.trim(); vlsmResult.innerHTML=''; try{ const [baseIp,basePref] = base.split('/'); if(!baseIp||!basePref) throw new Error('Format jaringan dasar harus IP/Prefix'); const basePrefix = Number(basePref); if(basePrefix<0||basePrefix>32) throw new Error('Prefix jaringan dasar invalid'); let poolStart = ipToInt(baseIp) & ((basePrefix===0?0:(0xffffffff << (32-basePrefix))>>>0)); const poolEnd = poolStart | (~((basePrefix===0?0:(0xffffffff << (32-basePrefix))>>>0)) >>>0);
+
+// parse hosts list
+let needs = hostsRaw.split(',').map(s=>Number(s.trim())).filter(x=>!Number.isNaN(x) && x>0);
+if(needs.length===0) throw new Error('Masukkan minimal satu kebutuhan host (angka > 0)');
+// sort desc
+needs = needs.map((h,i)=>({hosts:h, idx:i})).sort((a,b)=>b.hosts-a.hosts);
+
+const allocations = [];
+
+for(const req of needs){
+  const neededHosts = req.hosts;
+  const pref = smallestPrefixForHosts(neededHosts);
+  const size = 2**(32-pref);
+
+  // align poolStart to next boundary of size
+  const alignMask = ~(size -1) >>>0;
+  let candidateStart = poolStart;
+  if((candidateStart & (size-1)) !== 0){
+    candidateStart = (candidateStart & alignMask) + size;
+  }
+
+  const candidateEnd = candidateStart + size -1;
+  if(candidateEnd > poolEnd) throw new Error('Tidak ada ruang cukup di jaringan dasar untuk alokasi yang diminta');
+
+  allocations.push({
+    requestedHosts: neededHosts,
+    prefix: pref,
+    size,
+    network: intToIp(candidateStart),
+    broadcast: intToIp(candidateEnd),
+    usable: Math.max(size-2,0),
+    first: (Math.max(size-2,0)>0) ? intToIp(candidateStart+1) : '-',
+    last: (Math.max(size-2,0)>0) ? intToIp(candidateEnd-1) : '-'
+  });
+
+  poolStart = candidateEnd + 1; // next free
+}
+
+// render result
+let html = '<div class="hint">Alokasi VLSM (urut dari kebutuhan terbesar)</div>';
+html += '<table style="width:100%;margin-top:8px;border-collapse:collapse"><thead><tr style="text-align:left;color:var(--muted)"><th>Req Hosts</th><th>Network/Prefix</th><th>Mask</th><th>Usable</th><th>Range</th></tr></thead><tbody>';
+for(const a of allocations){
+  html += `<tr style="border-top:1px solid rgba(255,255,255,0.03)"><td style="padding:8px">${a.requestedHosts}</td><td style="padding:8px">${a.network}/${a.prefix}</td><td style="padding:8px">${prefixToMask(a.prefix)}</td><td style="padding:8px">${a.usable}</td><td style="padding:8px">${a.first} - ${a.last}</td></tr>`;
+}
+html += '</tbody></table>';
+vlsmResult.innerHTML = html;
+
+}catch(e){ vlsmResult.innerHTML = <div class="hint" style="color:#ffb4b4">Error: ${e.message}</div>; } });
+
+vlsmClear.addEventListener('click', ()=>{vlsmNet.value='192.168.1.0/24'; hostsList.value='50,20,10'; vlsmResult.innerHTML='';});
+
+// small nicety: calculate initial values calcBtn.click(); </script>
+
+</body>
+</html>
